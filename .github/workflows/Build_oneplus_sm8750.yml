@@ -38,6 +38,18 @@ on:
         description: "⏰ 自定义构建时间- (英文时间字符串格式 留空则默认官方）"
         required: false
         default: ''
+      
+      custom_kernel_middle_name:
+        description: "✏️ 自定义中间标识（替换提交哈希位置）"
+        required: false
+        default: 'YID'
+        type: string
+      
+      custom_kernel_tail_suffix:
+        description: "✏️ 自定义尾部后缀（如 Re-TG@qdykernel）"
+        required: false
+        default: 'Re-@GitHub'
+        type: string
 
       enable_susfs:
         description: "启用SUSFS"
@@ -608,7 +620,9 @@ jobs:
           cd kernel_workspace
           echo "CONFIG_KSU=y" >> ./common/arch/arm64/configs/gki_defconfig
           echo "CONFIG_KPM=y" >> ./common/arch/arm64/configs/gki_defconfig
-          echo 'CONFIG_KSU_FULL_NAME_FORMAT="%TAG_NAME%-%COMMIT_SHA%-Re-TG@qdykernel"' >> ./common/arch/arm64/configs/gki_defconfig
+          MIDDLE="${{ github.event.inputs.custom_kernel_middle_name }}"
+          TAIL="${{ github.event.inputs.custom_kernel_tail_suffix }}"
+          echo "CONFIG_KSU_FULL_NAME_FORMAT=\"%TAG_NAME%-${MIDDLE}-${TAIL}\"" >> ./common/arch/arm64/configs/gki_defconfig
           
           if [ "${{ env.ENABLE_SUSFS }}" == 'true' ];then
             echo "CONFIG_KSU_SUSFS=y" >> ./common/arch/arm64/configs/gki_defconfig
