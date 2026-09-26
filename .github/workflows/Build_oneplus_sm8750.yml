@@ -897,9 +897,45 @@ jobs:
           name: Re-Kernel-v${{ steps.download-rekernel.outputs.version-number }}
           path: Re-Kernel-v${{ steps.download-rekernel.outputs.version-number }}
 
+  upload_manager:
+    name: Download ReSukiSU Manager APK
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+      - name: 📥 Download Manager-release.zip (下载 ReSukiSU Manager 构建产物)
+        run: |
+          set -euo pipefail
+          aria2c -s16 -x16 -k1M \
+            "https://nightly.link/ReSukiSU/ReSukiSU/workflows/build-manager/main/Manager-release.zip" \
+            -o Manager-release.zip
+          ls -lh Manager-release.zip
+
+      - name: 📦 Extract arm64 APK (解压并提取 arm64 APK)
+        run: |
+          set -euo pipefail
+          mkdir -p manager_apk
+          unzip -q Manager-release.zip -d manager_apk
+          find manager_apk -type f | head -n 50
+
+          APK_FILE=$(find manager_apk -type f -name "ReSukiSU_*-arm64-v8a-release.apk" | head -n 1)
+          if [ -z "$APK_FILE" ]; then
+            echo "::error::未找到 ReSukiSU_*-arm64-v8a-release.apk"
+            exit 1
+          fi
+          APK_NAME=$(basename "$APK_FILE")
+          echo "找到 APK: $APK_NAME"
+          cp "$APK_FILE" "./$APK_NAME"
+          ls -lh *.apk
+
+      - name: 📤 Upload Manager APK (上传 ReSukiSU Manager APK)
+        uses: actions/upload-artifact@v6
+        with:
+          name: ReSukiSU-Manager
+          path: ReSukiSU_*-arm64-v8a-release.apk
+
   release:
     name: 📤 Create Release (创建发布)
-    needs: [build, upload_rekernel]
+    needs: [build, upload_rekernel, upload_manager]
     if: ${{ github.event.inputs.enable_release == 'true' && always() && needs.build.result != 'failure' }}
     runs-on: ubuntu-latest
     permissions:
@@ -935,6 +971,12 @@ jobs:
               (cd "$rk_dir" && zip -qr "../${name}.zip" .)
             fi
           done
+
+          # 复制 ReSukiSU Manager APK 到发布根目录（保留原文件名）
+          if [ -d "./release_assets/ReSukiSU-Manager" ]; then
+            echo "复制 ReSukiSU Manager APK..."
+            find ./release_assets/ReSukiSU-Manager -name 'ReSukiSU_*-arm64-v8a-release.apk' -exec cp {} ./release_assets/ \;
+          fi
 
           # 列出所有待上传的文件
           echo ""
@@ -1018,6 +1060,7 @@ jobs:
           1. 若你已刷入 ReSukiSU 内核，且 ReSukiSU 管理器已更新至最新版本，可在管理器中直接刷入 AnyKernel 刷机包并重启；
           2. 由于 KernelSU 上游更新了元模块功能，最新版 KSU 管理器需要配合元模块 (metamodule) 才能正常挂载模块。目前的元模块包括 [meta overlayfs](https://github.com/KernelSU-Modules-Repo/meta-overlayfs), [mountify](https://github.com/backslashxx/mountify), [meta magicmount](https://github.com/7a72/meta-magic_mount/) 等。若你是第一次使用 KSU 或刚从旧版 KSU 管理器升级至新版，请先安装一个元模块；
           3. 若启用 Re-Kernel，需刷入配套Re-Kernel模块并配合 NoActive 软件使用，以提升后台冻结能力。
+          4. 本次发布已附带配套的 ReSukiSU Manager APK（arm64 架构），可直接安装使用。
 
           #### 🔗 相关链接
 
@@ -1034,8 +1077,8 @@ jobs:
           cat release_notes.md
           echo ""
 
-          # 收集所有待上传的文件（仅 AK3 zip 和 Re-Kernel zip）
-          RELEASE_FILES=$(find ./release_assets -maxdepth 1 -type f \( -name 'AK3_*.zip' -o -name 'Re-Kernel-v*.zip' \) 2>/dev/null || true)
+          # 收集所有待上传的文件（AK3 zip、Re-Kernel zip、Manager APK）
+          RELEASE_FILES=$(find ./release_assets -maxdepth 1 -type f \( -name 'AK3_*.zip' -o -name 'Re-Kernel-v*.zip' -o -name 'ReSukiSU_*-arm64-v8a-release.apk' \) 2>/dev/null || true)
 
           if [ -z "$RELEASE_FILES" ]; then
             echo "::warning::没有找到待上传的发布文件"
