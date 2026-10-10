@@ -12,7 +12,7 @@
 
 ## 📖 Introduction
 
- This project provides automated kernel compilation workflow based on **GitHub Actions**, supporting multiple **OnePlus** and **Realme** devices powered by **SM8750** platform. Through highly integrated scripts, it enables one-click compilation of OKI kernels with features including **(Re)SukiSU**, **SUSFS**, **Fengchi Scheduler**, and more.
+ This project provides automated kernel compilation workflow based on **GitHub Actions**, supporting multiple **OnePlus** and **Realme** devices powered by **SM8750** platform. Through highly integrated scripts, it enables one-click compilation of OKI kernels with features including **BakaSU**, **SUSFS**, **Fengchi Scheduler**, and more.
 
 ### ✨ Key Features
 
