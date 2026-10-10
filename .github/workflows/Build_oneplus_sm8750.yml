@@ -48,7 +48,7 @@ on:
       custom_kernel_tail_suffix:
         description: "✏️ 自定义尾部后缀（如 Re-TG@qdykernel）"
         required: false
-        default: 'Re-@GitHub'
+        default: 'Baka-@GitHub'
         type: string
 
       enable_susfs:
