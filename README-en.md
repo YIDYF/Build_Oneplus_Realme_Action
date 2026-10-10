@@ -17,7 +17,7 @@
 ### ✨ Key Features
 
  - 🚀 **Fully Automated** - GitHub Actions based, no local environment required
- - 🔧 **Multiple KSU Options** - ReSukiSU / SukiSU-Ultra selectable
+ - 🔧 **Multiple KSU Options** - BakaSU / SukiSU-Ultra selectable
  - 📱 **Multi-Device Support** - 10 OnePlus/Realme devices supported
  - ⚡ **Performance Optimized** - Integrated perfect Fengchi scheduler patch
  - 💾 **ccache Caching** - Intelligent cache management, 50% faster for first build with public cache, 80% faster for rebuilds
@@ -110,7 +110,7 @@ Click the **Fork** button in the upper right corner to copy this repository to y
 
  - [OnePlus Kernel Open Source](https://github.com/OnePlusOSS/kernel_manifest)
  - [SukiSU-Ultra Project](https://github.com/SukiSU-Ultra/SukiSU-Ultra)
- - [ReSukiSU Project](https://github.com/ReSukiSU/ReSukiSU)
+ - [BakaSU Project](https://github.com/Baka-SU/BakaSU)
  - [Fengchi Scheduler Patch](https://github.com/Numbersf/SCHED_PATCH)
 
 ### Community Support

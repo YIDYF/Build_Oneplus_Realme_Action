@@ -17,7 +17,7 @@
 ### ✨ 主要特性
 
 - 🚀 **全自动化编译** - 基于 GitHub Actions，无需本地环境
-- 🔧 **多种 KSU 支持** - ReSukiSU / SukiSU-Ultra 可选
+- 🔧 **多种 KSU 支持** - BakaSU / SukiSU-Ultra 可选
 - 📱 **多机型适配** - 支持 10 款 OnePlus/Realme 设备
 - ⚡ **性能优化** - 集成完美风驰调度补
 - 💾 **ccache 缓存** - 智能缓存管理，首次编译使用公共缓存提速 50%，二次编译提速 80%
@@ -109,7 +109,7 @@
 
 - [OnePlus 内核开源](https://github.com/OnePlusOSS/kernel_manifest)
 - [SukiSU-Ultra 项目](https://github.com/SukiSU-Ultra/SukiSU-Ultra)
-- [ReSukiSU 项目](https://github.com/ReSukiSU/ReSukiSU)
+- [BakaSU 项目](https://github.com/Baka-SU/BakaSU)
 - [风驰调度补丁](https://github.com/Numbersf/SCHED_PATCH)
 
 ### 社区支持
