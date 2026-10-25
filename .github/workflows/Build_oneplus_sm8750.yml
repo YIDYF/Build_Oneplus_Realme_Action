@@ -891,88 +891,9 @@ jobs:
           name: Re-Kernel-v${{ steps.download-rekernel.outputs.version-number }}
           path: Re-Kernel-v${{ steps.download-rekernel.outputs.version-number }}
 
-  upload_manager:
-    name: Download BakaSU Manager APK
-    needs: build
-    runs-on: ubuntu-latest
-    steps:
-      - name: 🔎 Find latest BakaSU Manager APK (自动识别 cctv18/BakaSU_CI 最新 64 位 APK)
-        id: fetch-apk
-        uses: actions/github-script@v8
-        env:
-          # 想换源只改这里；不要写死版本号/文件名，CI 会持续更新
-          MANAGER_REPO_OWNER: cctv18
-          MANAGER_REPO_NAME: BakaSU_CI
-        with:
-          script: |
-            const owner = process.env.MANAGER_REPO_OWNER;
-            const repo  = process.env.MANAGER_REPO_NAME;
-
-            core.info(`正在获取 ${owner}/${repo} 的 Release 列表（自动识别，不使用固定链接）...`);
-
-            const { data: releases } = await github.rest.repos.listReleases({
-              owner,
-              repo,
-              per_page: 30,
-            });
-
-            // 64 位 = arm64-v8a；若该架构缺失则回退到 universal 通用包
-            const isArm64     = (name) => /-arm64-v8a-release\.apk$/i.test(name);
-            const isUniversal = (name) => /-universal-release\.apk$/i.test(name);
-
-            // 取版本号最大（其次发布时间最新）的那个可用 APK
-            let best = null;
-            for (const rel of releases || []) {
-              if (rel.draft) continue;
-              const assets = rel.assets || [];
-              const asset  = assets.find((a) => isArm64(a.name)) || assets.find((a) => isUniversal(a.name));
-              if (!asset) continue;
-
-              const version = Number(((rel.name || rel.tag_name || '').match(/\d{4,}/) || [0])[0]) || 0;
-              core.info(`候选: ${rel.tag_name} -> ${asset.name} (版本号 ${version})`);
-              if (!best || version > best.version) {
-                best = { version, release: rel, asset };
-              }
-            }
-
-            if (!best) {
-              core.setFailed(`未能从 ${owner}/${repo} 的 Release 中识别到 64 位 (arm64-v8a) APK`);
-              return;
-            }
-
-            core.info(`已选中: ${best.asset.name}（来自 ${best.release.tag_name}，${(best.asset.size / 1024 / 1024).toFixed(1)} MB）`);
-            core.setOutput('apk-name', best.asset.name);
-            core.setOutput('download-url', best.asset.browser_download_url);
-            core.setOutput('release-tag', best.release.tag_name);
-      - name: 📥 Download Manager APK (下载识别到的 64 位 APK)
-        run: |
-          set -euo pipefail
-          APK_NAME="${{ steps.fetch-apk.outputs.apk-name }}"
-          DOWNLOAD_URL="${{ steps.fetch-apk.outputs.download-url }}"
-
-          if [ -z "${APK_NAME}" ] || [ -z "${DOWNLOAD_URL}" ]; then
-            echo "::error::未能识别到 BakaSU Manager APK 的下载地址"
-            exit 1
-          fi
-
-          echo "正在下载: ${APK_NAME}"
-          echo "下载地址: ${DOWNLOAD_URL}"
-          aria2c -s16 -x16 -k1M "${DOWNLOAD_URL}" -o "${APK_NAME}"
-          ls -lh "${APK_NAME}"
-
-          # 简单校验：确认是有效 APK（zip 结构且包含 AndroidManifest.xml）
-          unzip -l "${APK_NAME}" | grep -q "AndroidManifest.xml"
-          echo "✓ 64 位 BakaSU Manager APK 下载并校验完成: ${APK_NAME}"
-
-      - name: 📤 Upload Manager APK (上传 BakaSU Manager APK)
-        uses: actions/upload-artifact@v6
-        with:
-          name: BakaSU-Manager
-          path: ${{ steps.fetch-apk.outputs.apk-name }}
-
   release:
     name: 📤 Create Release (创建发布)
-    needs: [build, upload_rekernel, upload_manager]
+    needs: [build, upload_rekernel]
     if: ${{ github.event.inputs.enable_release == 'true' && always() && needs.build.result != 'failure' }}
     runs-on: ubuntu-latest
     permissions:
@@ -1008,12 +929,6 @@ jobs:
               (cd "$rk_dir" && zip -qr "../${name}.zip" .)
             fi
           done
-
-          # 复制 BakaSU Manager APK 到发布根目录（保留原文件名）
-          if [ -d "./release_assets/BakaSU-Manager" ]; then
-            echo "复制 BakaSU Manager APK..."
-            find ./release_assets/BakaSU-Manager \( -name 'BakaSU_*-arm64-v8a-release.apk' -o -name 'BakaSU_*-universal-release.apk' \) -exec cp {} ./release_assets/ \;
-          fi
 
           # 列出所有待上传的文件
           echo ""
@@ -1097,7 +1012,6 @@ jobs:
           1. 若你已刷入 BakaSU 内核，且 BakaSU 管理器已更新至最新版本，可在管理器中直接刷入 AnyKernel 刷机包并重启；
           2. 由于 KernelSU 上游更新了元模块功能，最新版 KSU 管理器需要配合元模块 (metamodule) 才能正常挂载模块。目前的元模块包括 [meta overlayfs](https://github.com/KernelSU-Modules-Repo/meta-overlayfs), [mountify](https://github.com/backslashxx/mountify), [meta magicmount](https://github.com/7a72/meta-magic_mount/) 等。若你是第一次使用 KSU 或刚从旧版 KSU 管理器升级至新版，请先安装一个元模块；
           3. 若启用 Re-Kernel，需刷入配套Re-Kernel模块并配合 NoActive 软件使用，以提升后台冻结能力。
-          4. 本次发布已附带配套的 BakaSU Manager APK（arm64 架构），可直接安装使用。
 
           #### 🔗 相关链接
 
@@ -1114,8 +1028,8 @@ jobs:
           cat release_notes.md
           echo ""
 
-          # 收集所有待上传的文件（AK3 zip、Re-Kernel zip、Manager APK）
-          RELEASE_FILES=$(find ./release_assets -maxdepth 1 -type f \( -name 'AK3_*.zip' -o -name 'Re-Kernel-v*.zip' -o -name 'BakaSU_*-arm64-v8a-release.apk' -o -name 'BakaSU_*-universal-release.apk' \) 2>/dev/null || true)
+          # 收集所有待上传的文件（仅 AK3 zip 和 Re-Kernel zip）
+          RELEASE_FILES=$(find ./release_assets -maxdepth 1 -type f \( -name 'AK3_*.zip' -o -name 'Re-Kernel-v*.zip' \) 2>/dev/null || true)
 
           if [ -z "$RELEASE_FILES" ]; then
             echo "::warning::没有找到待上传的发布文件"
